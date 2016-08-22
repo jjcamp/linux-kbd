@@ -4,10 +4,11 @@
 #include <atomic>
 #include <iostream>
 #include <iomanip>
+#include <poll.h>
 
 using namespace std;
 using termios_t = struct termios;
-using timeval_t = struct timeval;
+using pollfd_t = struct pollfd;
 
 using Key = struct {
     int Character = 0;
@@ -40,11 +41,21 @@ class Keyboard {
 
     Key getCh() {
         Key k;
-        char buf[1];
-        read(0, &buf, 1);
-        k.Character = buf[0];
-
-        if (k.Character < 27 && k.Character > 0) {
+        char c;
+        read(0, &c, sizeof(c));
+        k.Character = c;
+        
+        if (k.Character == 27) {
+            k.Alt = true;
+            pollfd pfd;
+            pfd.fd = 0;
+            pfd.events = POLLIN;
+            if(poll(&pfd, 1, 1)) {
+                read(0, &c, sizeof(c));
+                k.Character = c;
+            }
+        }
+        else if (k.Character < 27 && k.Character > 0) {
             k.Ctrl = true;
             k.Character += 96; // Convert to actual
         }
@@ -60,27 +71,24 @@ void break_intercept(int sig) {
 
 int main() {
     if (SIG_ERR == signal(SIGINT, break_intercept)) {
-        cout << "Failed to register exit function\n";
+        cout << "Failed to register exit function" << endl;
         return 1; 
     }
 
     auto kbd = Keyboard();
-    cout << "Awaiting input (Ctrl+C to quit)..." << endl;
+    cout << "Awaiting input (Ctrl+C or Esc to quit)..." << endl;
     while (!flag_interrupt) {
         Key k = kbd.getCh();
-        if (k.Alt && k.Character == 0)
+        if (k.Alt && k.Character == 27)
             break;
-        if (k.Character == 27)
-            cout << "0x1b\t27\t[Alt] or [Esc]" << endl;
-        else {
-            cout << "0x" << hex << k.Character << "\t" 
-                 << dec << k.Character << "\t";
-            if (k.Ctrl)
-                cout << "Ctrl-" << (char)k.Character;
-            else
-                cout << (char)k.Character;
-            cout << endl;
-        }
+        cout << "0x" << hex << k.Character << "\t" 
+             << dec << k.Character << "\t";
+        if (k.Alt)
+            cout << "Alt-";
+        else if (k.Ctrl)
+            cout << "Ctrl-";
+        cout << (char)k.Character;
+        cout << endl;
     }
 
     return 0;
