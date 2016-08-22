@@ -12,6 +12,7 @@ using timeval_t = struct timeval;
 using Key = struct {
     int Character = 0;
     bool Alt = false;
+    bool Ctrl = false;
 };
 
 class Keyboard {
@@ -42,6 +43,11 @@ class Keyboard {
         char buf[1];
         read(0, &buf, 1);
         k.Character = buf[0];
+
+        if (k.Character < 27 && k.Character > 0) {
+            k.Ctrl = true;
+            k.Character += 96; // Convert to actual
+        }
         return k;
     }
 };
@@ -62,9 +68,19 @@ int main() {
     cout << "Awaiting input (Ctrl+C to quit)..." << endl;
     while (!flag_interrupt) {
         Key k = kbd.getCh();
-        if (k.Alt && k.Character == EOF)
+        if (k.Alt && k.Character == 0)
             break;
-        cout << "0x" << hex << k.Character << " - " << (char)k.Character << endl;
+        if (k.Character == 27)
+            cout << "0x1b\t27\t[Alt] or [Esc]" << endl;
+        else {
+            cout << "0x" << hex << k.Character << "\t" 
+                 << dec << k.Character << "\t";
+            if (k.Ctrl)
+                cout << "Ctrl-" << (char)k.Character;
+            else
+                cout << (char)k.Character;
+            cout << endl;
+        }
     }
 
     return 0;
