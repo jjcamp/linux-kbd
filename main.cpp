@@ -3,9 +3,11 @@
 #include <termios.h>
 #include <atomic>
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 using termios_t = struct termios;
+using timeval_t = struct timeval;
 
 using Key = struct {
     int Character = 0;
@@ -39,12 +41,7 @@ class Keyboard {
         Key k;
         char buf[1];
         read(0, &buf, 1);
-        if (buf[0] == 27) {
-            k.Alt = true;
-            k.Character = getc(0);
-        }
-        else
-            k.Character = buf[0];
+        k.Character = buf[0];
         return k;
     }
 };
@@ -67,7 +64,7 @@ int main() {
         Key k = kbd.getCh();
         if (k.Alt && k.Character == EOF)
             break;
-        cout << k.Character << " - " << (char)k.Character << endl;
+        cout << "0x" << hex << k.Character << " - " << (char)k.Character << endl;
     }
 
     return 0;
