@@ -73,7 +73,7 @@ class Keyboard {
                 k.Alt = true;
                 k.CChar = k.Char;  // Shouldn't use this here anyway
             }
-            else if (buf.size == 3 && buf.buf[1] == 79) {
+            else if (buf.size == 3 && (buf.buf[1] == 79 || buf.buf[1] == 91)) {
                 k.Char = buf.buf[2];
                 switch (k.Char) {
                     case 'A': k.CChar = KEY_UP; break;
@@ -83,7 +83,7 @@ class Keyboard {
                     case 70: k.CChar = KEY_END; break;
                     case 72: k.CChar = KEY_HOME; break;
                     default:
-                        cout << "27 79 x - " << k.Char << endl;
+                        cout << "27 79|91 x - " << k.Char << endl;
                         k.CChar = k.Char;
                 }
             }
